@@ -1,0 +1,10 @@
+@import './base.css';
+
+/*
+  Any remaining global styles should be minimal and carefully considered.
+  Prefer Bootstrap utility classes or component-scoped styles.
+  If you need to customize Bootstrap theme (colors, fonts, etc.),
+  it's best done by overriding Bootstrap's SASS variables, not by adding conflicting global CSS.
+*/
+
+/* Add any truly global, non-conflicting styles below if necessary */

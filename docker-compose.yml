@@ -1,0 +1,23 @@
+services:
+
+  app:
+    build: .
+    container_name: fipe-app
+    restart: always
+    ports:
+      - "3000:3000"
+    command: npm run dev
+    volumes:
+      - ./:/app
+      - /app/node_modules
+    env_file:
+      - .env
+    environment:
+      - NUXT_HOST=0.0.0.0
+      - NUXT_PORT=3000
+    networks:
+      - fipe-net
+
+networks:
+  fipe-net:
+    driver: bridge
