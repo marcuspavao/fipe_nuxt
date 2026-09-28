@@ -1,6 +1,10 @@
 <template>
   <div class="search-container card shadow-sm mb-4">
     <div class="card-body">
+      <div v-if="dbWarning" class="alert alert-warning d-flex align-items-center mb-3" role="alert">
+        <i class="fas fa-exclamation-triangle me-2 fs-5"></i>
+        <div>{{ dbWarning }}</div>
+      </div>
       <div class="row g-3">
         <div class="col-md-4">
           <label for="tabela-select" class="form-label"><i class="fas fa-calendar-alt"></i> Ano de Referência:</label>
@@ -50,17 +54,26 @@ const loadingTabelas = ref(false);
 const loadingMarcas = ref(false);
 const loadingModelos = ref(false);
 
+const dbWarning = ref('');
+
 const emit = defineEmits(['modeloSelected', 'loading', 'error']);
 
 async function fetchTabelas() {
   loadingTabelas.value = true;
+  dbWarning.value = '';
   emit('loading', true);
   emit('error', ''); 
   try {
-    tabelas.value = await getTabelas();
+    const fetched = await getTabelas();
+    tabelas.value = fetched;
+    if (!fetched || fetched.length === 0) {
+      dbWarning.value = 'Nenhuma tabela de referência ou dados de veículos encontrados na base de dados.';
+    }
   } catch (err) {
     console.error(err);
-    emit('error', err.message || 'Erro ao carregar tabelas de referência.');
+    const msg = err.message || 'Erro ao carregar tabelas de referência.';
+    dbWarning.value = msg;
+    emit('error', msg);
   } finally {
     loadingTabelas.value = false;
     emit('loading', false);
@@ -82,6 +95,9 @@ async function onTabelaChange() {
     emit('error', '');
     try {
       marcas.value = await getMarcas(selectedTabela.value);
+      if (marcas.value.length === 0) {
+        emit('error', 'Nenhuma marca encontrada para esta tabela.');
+      }
     } catch (err) {
       console.error(err);
       emit('error', err.message || 'Erro ao carregar marcas.');
@@ -103,6 +119,9 @@ async function onMarcaChange() {
     emit('error', '');
     try {
       modelos.value = await getModelos(selectedTabela.value, selectedMarca.value);
+      if (modelos.value.length === 0) {
+        emit('error', 'Nenhum modelo encontrado para esta marca.');
+      }
     } catch (err) {
       console.error(err);
       emit('error', err.message || 'Erro ao carregar modelos.');
@@ -129,14 +148,7 @@ function onModeloChange() {
 </script>
 
 <style scoped>
-.search-container {
-  /* Removed specific styling, relying on Bootstrap card and utilities */
-}
-
 .form-label i {
   margin-right: 0.5rem;
 }
-
-/* Custom styles can be kept if Bootstrap defaults are not sufficient,
-   but try to use Bootstrap classes as much as possible. */
 </style>
