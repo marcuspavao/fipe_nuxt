@@ -13,32 +13,38 @@ export default defineEventHandler(async (event) => {
         throw createError({ statusCode: 400, message: "Parâmetro 'tabela' é obrigatório" })
     }
 
-    const db = await getMongoDB()
-    const col = db.collection('Veiculos')
-    const regex = new RegExp(q, 'i')
+    try {
+        const db = await getMongoDB()
+        const col = db.collection('Veiculos')
+        const regex = new RegExp(q, 'i')
 
-    const docs = await col.find({
-        monthYearId: tabelaId,
-        $or: [
-            { brandName: regex },
-            { 'models.modelName': regex },
-        ],
-    }).toArray()
+        const docs = await col.find({
+            monthYearId: tabelaId,
+            $or: [
+                { brandName: regex },
+                { 'models.modelName': regex },
+            ],
+        }).toArray()
 
-    // Flatten: retorna os modelos que batem com a busca
-    const results: any[] = []
-    for (const doc of docs) {
-        for (const model of doc.models ?? []) {
-            if (regex.test(model.modelName) || regex.test(doc.brandName)) {
-                results.push({
-                    brandCode: doc.brandCode,
-                    brandName: doc.brandName,
-                    modelCode: model.modelCode,
-                    modelName: model.modelName,
-                })
+        // Flatten: retorna os modelos que batem com a busca
+        const results: any[] = []
+        for (const doc of docs) {
+            for (const model of doc.models ?? []) {
+                if (regex.test(model.modelName) || regex.test(doc.brandName)) {
+                    results.push({
+                        brandCode: doc.brandCode,
+                        brandName: doc.brandName,
+                        modelCode: model.modelCode,
+                        modelName: model.modelName,
+                    })
+                }
             }
         }
-    }
 
-    return results.slice(0, 50)
+        return results.slice(0, 50)
+    } catch (err: any) {
+        console.error('[API] GET /api/search — ❌ Erro:', err)
+        if (err.statusCode) throw err
+        throw createError({ statusCode: 500, message: 'Erro ao realizar a busca no banco de dados.' })
+    }
 })

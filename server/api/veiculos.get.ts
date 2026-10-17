@@ -10,28 +10,34 @@ export default defineEventHandler(async (event) => {
         throw createError({ statusCode: 400, message: "Parâmetros 'tabela' e 'modelo' são obrigatórios" })
     }
 
-    const db = await getMongoDB()
-    const col = db.collection('Veiculos')
+    try {
+        const db = await getMongoDB()
+        const col = db.collection('Veiculos')
 
-    const doc = await col.findOne({
-        monthYearId: tabelaId,
-        'models.modelCode': modeloId,
-    })
+        const doc = await col.findOne({
+            monthYearId: tabelaId,
+            'models.modelCode': modeloId,
+        })
 
-    if (!doc) {
-        throw createError({ statusCode: 404, message: 'Veículo não encontrado' })
+        if (!doc) {
+            throw createError({ statusCode: 404, message: 'Veículo não encontrado' })
+        }
+
+        // Encontra o modelo específico e retorna seus anos com o nome do modelo
+        const modelo = doc.models?.find((m: any) => m.modelCode === modeloId)
+        if (!modelo?.years) {
+            throw createError({ statusCode: 404, message: 'Anos não encontrados para o modelo' })
+        }
+
+        return modelo.years.map((year: any) => ({
+            ...year,
+            model: modelo.modelName,
+            brandName: doc.brandName,
+            brandCode: doc.brandCode,
+        }))
+    } catch (err: any) {
+        console.error('[API] GET /api/veiculos — ❌ Erro:', err)
+        if (err.statusCode) throw err
+        throw createError({ statusCode: 500, message: 'Erro ao buscar detalhes do veículo no banco de dados.' })
     }
-
-    // Encontra o modelo específico e retorna seus anos com o nome do modelo
-    const modelo = doc.models?.find((m: any) => m.modelCode === modeloId)
-    if (!modelo?.years) {
-        throw createError({ statusCode: 404, message: 'Anos não encontrados para o modelo' })
-    }
-
-    return modelo.years.map((year: any) => ({
-        ...year,
-        model: modelo.modelName,
-        brandName: doc.brandName,
-        brandCode: doc.brandCode,
-    }))
 })
