@@ -1,39 +1,33 @@
 // GET /api/tabelas
-import { getMongoDB } from '../utils/db'
+import { withMongoDB } from '../utils/db'
 
 // Retorna as tabelas de referência que possuem veículos
-export default defineEventHandler(async () => {
+export default defineEventHandler(async (event) => {
     console.log('[API] GET /api/tabelas — chamada recebida')
 
     try {
-        const db = await getMongoDB()
-        const col = db.collection('TabelaReferencia')
+        return await withMongoDB(event, async (db) => {
+            const col = db.collection('TabelaReferencia')
 
-        const tabelas = await col
-            .find({})
-            .sort({ codigo: -1 })
-            .toArray()
+            const tabelas = await col
+                .find({})
+                .sort({ codigo: -1 })
+                .toArray()
 
-        console.log(`[API] GET /api/tabelas — ${tabelas.length} tabelas encontradas no banco`)
+            console.log(`[API] GET /api/tabelas — ${tabelas.length} tabelas encontradas no banco`)
 
-        if (tabelas.length === 0) {
-            console.warn('[API] GET /api/tabelas — Nenhuma tabela de referência encontrada na base de dados.')
-            return []
-        }
+            if (tabelas.length === 0) {
+                console.warn('[API] GET /api/tabelas — Nenhuma tabela de referência encontrada na base de dados.')
+                return []
+            }
 
-        // Filtra apenas as que têm veículos (verifica em paralelo)
-        const veiculosCol = db.collection('Veiculos')
-        const results = await Promise.all(
-            tabelas.map(async (t) => {
-                const count = await veiculosCol.countDocuments({ monthYearId: t.codigo })
-                return count > 0 ? t : null
-            })
-        )
+            // Fetch available months once instead of querying every reference table.
+            const mesesComVeiculos = new Set(await db.collection('Veiculos').distinct('monthYearId'))
+            const filtered = tabelas.filter(t => mesesComVeiculos.has(t.codigo))
+            console.log(`[API] GET /api/tabelas — ${filtered.length} tabelas com veículos retornadas`)
 
-        const filtered = results.filter(Boolean)
-        console.log(`[API] GET /api/tabelas — ${filtered.length} tabelas com veículos retornadas`)
-
-        return filtered
+            return filtered
+        })
     } catch (err: any) {
         console.error('[API] GET /api/tabelas — ❌ Erro:', err)
         if (err.statusCode) throw err

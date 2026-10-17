@@ -40,8 +40,8 @@ export default defineNuxtConfig({
 
     runtimeConfig: {
         // Privadas (apenas server-side)
-        mongoUri: process.env.MONGO_URI || 'mongodb://root:123456@66.179.190.157:27017/?authSource=admin',
-        mongoDatabase: process.env.MONGO_DATABASE || 'fipe_db',
+        mongoUri: '', // Defina NUXT_MONGO_URI no ambiente.
+        mongoDatabase: 'fipe_db',
         // Públicas (acessíveis no frontend)
         public: {
             appName: 'FIPE App',

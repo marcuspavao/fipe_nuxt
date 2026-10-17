@@ -1,5 +1,5 @@
 // GET /api/dashboard?tabela1=319&tabela2=312&marca=59 (marca opcional)
-import { getMongoDB } from '../utils/db'
+import { withMongoDB } from '../utils/db'
 
 const ANO_ZERO_KM = 32000
 
@@ -81,48 +81,49 @@ export default defineEventHandler(async (event) => {
     }
 
     try {
-        const db = await getMongoDB()
-        const tabelasCol = db.collection('TabelaReferencia')
+        return await withMongoDB(event, async (db) => {
+            const tabelasCol = db.collection('TabelaReferencia')
 
-        // Busca labels das tabelas em paralelo
-        const [ref1Doc, ref2Doc, stats1, stats2] = await Promise.all([
-            tabelasCol.findOne({ codigo: tabela1Id }),
-            tabelasCol.findOne({ codigo: tabela2Id }),
-            processTabela(db, tabela1Id, '', marcaId),
-            processTabela(db, tabela2Id, '', marcaId),
-        ])
+            // Busca labels das tabelas em paralelo
+            const [ref1Doc, ref2Doc, stats1, stats2] = await Promise.all([
+                tabelasCol.findOne({ codigo: tabela1Id }),
+                tabelasCol.findOne({ codigo: tabela2Id }),
+                processTabela(db, tabela1Id, '', marcaId),
+                processTabela(db, tabela2Id, '', marcaId),
+            ])
 
-        const ref1 = ref1Doc?.mes ?? `Tabela ${tabela1Id}`
-        const ref2 = ref2Doc?.mes ?? `Tabela ${tabela2Id}`
+            const ref1 = ref1Doc?.mes ?? `Tabela ${tabela1Id}`
+            const ref2 = ref2Doc?.mes ?? `Tabela ${tabela2Id}`
 
-        // Atualiza labels após buscar
-        stats1.forEach(s => (s.ref = ref1))
-        stats2.forEach(s => (s.ref = ref2))
+            // Atualiza labels após buscar
+            stats1.forEach(s => (s.ref = ref1))
+            stats2.forEach(s => (s.ref = ref2))
 
-        // Monta resultado
-        const allBrands = new Set([...stats1.keys(), ...stats2.keys()])
-        const result = []
+            // Monta resultado
+            const allBrands = new Set([...stats1.keys(), ...stats2.keys()])
+            const result = []
 
-        for (const brandCode of allBrands) {
-            const s1 = stats1.get(brandCode)
-            const s2 = stats2.get(brandCode)
+            for (const brandCode of allBrands) {
+                const s1 = stats1.get(brandCode)
+                const s2 = stats2.get(brandCode)
 
-            const calcDiff = (v1: number, v2: number) =>
-                v2 && v1 ? ((v1 / v2) - 1) * 100 : null
+                const calcDiff = (v1: number, v2: number) =>
+                    v2 && v1 ? ((v1 / v2) - 1) * 100 : null
 
-            result.push({
-                brandName: s1?.brandName ?? s2?.brandName,
-                brandCode,
-                periodo1: s1 ?? { ref: ref1, tabelaId: tabela1Id, totalModelos: 0, valorMedio0kmFmt: 'N/A' },
-                periodo2: s2 ?? { ref: ref2, tabelaId: tabela2Id, totalModelos: 0, valorMedio0kmFmt: 'N/A' },
-                diferencasPercentuais: {
-                    valorMedio0km: calcDiff(s1?.valorMedio0km, s2?.valorMedio0km),
-                    totalModelos: calcDiff(s1?.totalModelos, s2?.totalModelos),
-                },
-            })
-        }
+                result.push({
+                    brandName: s1?.brandName ?? s2?.brandName,
+                    brandCode,
+                    periodo1: s1 ?? { ref: ref1, tabelaId: tabela1Id, totalModelos: 0, valorMedio0kmFmt: 'N/A' },
+                    periodo2: s2 ?? { ref: ref2, tabelaId: tabela2Id, totalModelos: 0, valorMedio0kmFmt: 'N/A' },
+                    diferencasPercentuais: {
+                        valorMedio0km: calcDiff(s1?.valorMedio0km, s2?.valorMedio0km),
+                        totalModelos: calcDiff(s1?.totalModelos, s2?.totalModelos),
+                    },
+                })
+            }
 
-        return result
+            return result
+        })
     } catch (err: any) {
         console.error('[API] GET /api/dashboard — ❌ Erro:', err)
         if (err.statusCode) throw err

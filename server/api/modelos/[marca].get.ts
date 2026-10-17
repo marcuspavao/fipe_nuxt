@@ -1,5 +1,5 @@
 // GET /api/modelos/[marca]?tabela=319
-import { getMongoDB } from '../../utils/db'
+import { withMongoDB } from '../../utils/db'
 
 export default defineEventHandler(async (event) => {
     const marcaId = Number(getRouterParam(event, 'marca'))
@@ -11,15 +11,16 @@ export default defineEventHandler(async (event) => {
     }
 
     try {
-        const db = await getMongoDB()
-        const col = db.collection('Veiculos')
+        return await withMongoDB(event, async (db) => {
+            const col = db.collection('Veiculos')
 
-        const doc = await col.findOne({ monthYearId: tabelaId, brandCode: marcaId })
-        if (!doc) {
-            throw createError({ statusCode: 404, message: 'Marca não encontrada para esta tabela' })
-        }
+            const doc = await col.findOne({ monthYearId: tabelaId, brandCode: marcaId })
+            if (!doc) {
+                throw createError({ statusCode: 404, message: 'Marca não encontrada para esta tabela' })
+            }
 
-        return doc.models ?? []
+            return doc.models ?? []
+        })
     } catch (err: any) {
         console.error('[API] GET /api/modelos — ❌ Erro:', err)
         if (err.statusCode) throw err
