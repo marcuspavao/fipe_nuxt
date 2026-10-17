@@ -53,6 +53,8 @@ export default defineNuxtConfig({
     },
 
     css: [
+        '@fortawesome/fontawesome-free/css/fontawesome.css',
+        '@fortawesome/fontawesome-free/css/solid.css',
         '~/assets/base.css',
         '~/assets/main.css'
     ],
@@ -67,8 +69,7 @@ export default defineNuxtConfig({
             ],
             link: [
                 { rel: 'icon', href: '/icon_2.png' },
-                { rel: 'stylesheet', href: 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css' },
-                { rel: 'stylesheet', href: 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css' }
+                { rel: 'stylesheet', href: 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css' }
             ],
             script: [
                 { src: 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js', tagPosition: 'bodyClose' }
