@@ -16,6 +16,11 @@ export default defineEventHandler(async () => {
 
         console.log(`[API] GET /api/tabelas — ${tabelas.length} tabelas encontradas no banco`)
 
+        if (tabelas.length === 0) {
+            console.warn('[API] GET /api/tabelas — Nenhuma tabela de referência encontrada na base de dados.')
+            return []
+        }
+
         // Filtra apenas as que têm veículos (verifica em paralelo)
         const veiculosCol = db.collection('Veiculos')
         const results = await Promise.all(
@@ -29,8 +34,9 @@ export default defineEventHandler(async () => {
         console.log(`[API] GET /api/tabelas — ${filtered.length} tabelas com veículos retornadas`)
 
         return filtered
-    } catch (err) {
+    } catch (err: any) {
         console.error('[API] GET /api/tabelas — ❌ Erro:', err)
-        throw createError({ statusCode: 500, message: 'Erro ao buscar tabelas' })
+        if (err.statusCode) throw err
+        throw createError({ statusCode: 500, message: 'Erro ao buscar tabelas de referência no banco de dados.' })
     }
 })

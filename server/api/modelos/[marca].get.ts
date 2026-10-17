@@ -10,13 +10,19 @@ export default defineEventHandler(async (event) => {
         throw createError({ statusCode: 400, message: "Parâmetros 'marca' e 'tabela' são obrigatórios" })
     }
 
-    const db = await getMongoDB()
-    const col = db.collection('Veiculos')
+    try {
+        const db = await getMongoDB()
+        const col = db.collection('Veiculos')
 
-    const doc = await col.findOne({ monthYearId: tabelaId, brandCode: marcaId })
-    if (!doc) {
-        throw createError({ statusCode: 404, message: 'Marca não encontrada para esta tabela' })
+        const doc = await col.findOne({ monthYearId: tabelaId, brandCode: marcaId })
+        if (!doc) {
+            throw createError({ statusCode: 404, message: 'Marca não encontrada para esta tabela' })
+        }
+
+        return doc.models ?? []
+    } catch (err: any) {
+        console.error('[API] GET /api/modelos — ❌ Erro:', err)
+        if (err.statusCode) throw err
+        throw createError({ statusCode: 500, message: 'Erro ao buscar modelos no banco de dados.' })
     }
-
-    return doc.models ?? []
 })

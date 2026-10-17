@@ -1,4 +1,7 @@
 import { defineNuxtConfig } from 'nuxt/config'
+import { resolve } from 'path'
+
+const mockProxyPath = resolve('./server/utils/mockProxy.ts')
 
 export default defineNuxtConfig({
     compatibilityDate: '2024-11-01',
@@ -11,14 +14,27 @@ export default defineNuxtConfig({
     // Desativa Nuxt DevTools porque é muito pesado nas dependências
     devtools: { enabled: false },
 
-
-
     // Removemos os módulos não utilizados do FIPE App (Pinia, ColorMode, Icons) para limpar o servidor
     modules: [],
 
+    nitro: {
+        alias: {
+            'snappy': mockProxyPath,
+            'snappy/package.json': mockProxyPath,
+            'aws4': mockProxyPath,
+            'kerberos': mockProxyPath,
+            'mongodb-client-encryption': mockProxyPath,
+            'gcp-metadata': mockProxyPath,
+            '@mongodb-js/zstd': mockProxyPath,
+            '@aws-sdk/credential-providers': mockProxyPath,
+            'socks': mockProxyPath,
+            'bson-ext': mockProxyPath
+        }
+    },
+
     runtimeConfig: {
         // Privadas (apenas server-side)
-        mongoUri: process.env.MONGO_URI || 'mongodb://root:123456@66.179.190.157:27017/?authSource=admin',
+        mongoUri: process.env.MONGO_URI || '',
         mongoDatabase: process.env.MONGO_DATABASE || 'fipe_db',
         // Públicas (acessíveis no frontend)
         public: {
