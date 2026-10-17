@@ -1,7 +1,29 @@
 import { defineNuxtConfig } from 'nuxt/config'
 
 export default defineNuxtConfig({
-    compatibilityDate: '2024-11-01',
+    compatibilityDate: '2026-10-16',
+    nitro: {
+        cloudflare: {
+            nodeCompat: true,
+        },
+        rollupConfig: {
+            plugins: [{
+                name: 'mongodb-worker-optional-dependencies',
+                transform(code, id) {
+                    if (!process.env.NITRO_PRESET?.startsWith('cloudflare') ||
+                        !id.replaceAll('\\', '/').endsWith('/mongodb/lib/deps.js')) return
+
+                    // Keep the driver's try/catch fallback for unavailable Worker features.
+                    const optional = /require\((['"])(snappy|@mongodb-js\/zstd|kerberos|@aws-sdk\/credential-providers|gcp-metadata|socks|aws4|mongodb-client-encryption)\1\)/g
+                    return {
+                        code: code.replace(optional, (_match, _quote, name) =>
+                            `(() => { throw new Error(${JSON.stringify('MongoDB optional dependency unavailable in Workers: ')} + ${JSON.stringify(name)}); })()`),
+                        map: null,
+                    }
+                },
+            }],
+        },
+    },
     ssr: false,
 
     // Separação frontend / backend
